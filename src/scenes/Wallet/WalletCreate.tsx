@@ -4,6 +4,8 @@ import { TransactionUtils } from '../../utils/TransactionUtils';
 import WalletManage from './WalletManage';
 import AccountManage from './AccountManage';
 import { SafeAuthKit, Web3AuthAdapter } from '@safe-global/auth-kit';
+import MetaMaskConnect from "../Alchemy/MetaMaskConnect"
+
 
 function WalletCreate() {
   const [inputs, setInputs] = useState([{ key: TextUtils.randomString(), value: '' }]);
@@ -12,6 +14,7 @@ function WalletCreate() {
   // usestate for safe address
   const [safeAddress, setSafeAddress] = useState(localStorage.getItem('safeAddress')||'');
   const [account, setAccount] = useState<SafeAuthKit<Web3AuthAdapter>>()
+  const [newSafeMade, setNewSafeMade] = useState <boolean>(false)
   
 
   const addInput = () => {
@@ -42,15 +45,19 @@ function WalletCreate() {
   const createWallet = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     console.log(inputs);
-    const safe = await TransactionUtils.createMultisigWallet(inputs.map((input) => input.value), threshold);
-
+    const safe = await TransactionUtils.createMultisigWallet(inputs.map((input) => input.value), threshold).then(()=> setNewSafeMade(true))
+    
     console.log(safe);
   };
+
+  function viewFunction(){
+    const url = `https://app.safe.global/gor:${safeAddress}`;
+    window.open(url, '_blank');
+  }
 
   return (
     <div>
     <div className='EventDetail container card shadow my-5 p-5'>
-        <AccountManage onLoggedIn={handleLoggedIn} />
         <h1 className='text-center mb-3'>
                 Create a Wallet
         </h1>
@@ -97,28 +104,40 @@ function WalletCreate() {
           Create Wallet
         </button>
       </form>
+      {newSafeMade ? localStorage.getItem('safeAddress'): ''}
       <hr />
 
-      <h3 className='text-center mb-3'>
-             Load a Wallet
-      </h3>
-      <input
-              type="text"
-              className="form-control"
-              placeholder={`Existing Safe Address`}
-              value={safeAddress}
-              onChange={(e) => setSafeAddress(e.target.value)}
-            />
-        <button
-          type="button"
-          className="btn btn-outline-primary my-2"
-          onClick={() => {
-            localStorage.setItem('safeAddress', safeAddress);
-          }}
-        >
-          Save Safe Address to Local Storage
-        </button>
+      
     </div>
+    <div className='EventDetail container card shadow my-5 p-5'>
+      <h3 className='text-center mb-3'>
+              Load a Wallet
+        </h3>
+        <input
+                type="text"
+                className="form-control"
+                placeholder={`Existing Safe Address`}
+                value={safeAddress}
+                onChange={(e) => setSafeAddress(e.target.value)}
+              />
+          <button
+            type="button"
+            className="btn btn-outline-primary my-2"
+            onClick={() => {
+              localStorage.setItem('safeAddress', safeAddress);
+            }}
+          >
+            Save Safe Address to Local Storage
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-primary my-2"
+            onClick= {() => viewFunction()}
+          >
+            View on Safe Wallet
+          </button>
+    </div>
+    <MetaMaskConnect/>
     <WalletManage authKit={account} />
     </div>
   );

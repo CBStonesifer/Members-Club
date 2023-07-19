@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 import SafeApiKit from '@safe-global/api-kit'
-import Safe, { EthersAdapter, SafeFactory, SafeAccountConfig } from '@safe-global/protocol-kit'
+import Safe, { EthersAdapter, SafeFactory, SafeAccountConfig, RemoveOwnerTxParams, AddOwnerTxParams } from '@safe-global/protocol-kit'
 import { MetaTransactionData, OperationType, MetaTransactionOptions, RelayTransaction } from '@safe-global/safe-core-sdk-types'
 import { GelatoRelayAdapter } from '@safe-global/relay-kit'
 import { CHAIN_INFO } from './Chain'
@@ -49,12 +49,12 @@ export class TransactionUtils {
             signerOrProvider: signer || provider
         })
 
-        console.log({authKit}, authKit?.getProvider(), provider, signer, ethAdapter)
+        console.log("EthAdapter "+ {authKit}, authKit?.getProvider(), provider, signer, ethAdapter)
 
         return ethAdapter;
     }
     static createMultisigWallet =  async (owners: Array<string>, threshold: number) => {
-        console.log({owners, threshold})
+        console.log("Create Multsig "+{owners, threshold})
 
         const ethAdapter = await this.getEthAdapter();
         const chainId = await ethAdapter.getChainId();
@@ -76,6 +76,7 @@ export class TransactionUtils {
 
         const safeAddress = safe.getAddress()
 
+        localStorage.setItem('safeAddress', safeAddress)
         console.log('Your Safe has been deployed:')
         console.log(`${chainInfo.blockExplorerUrl}/address/${safeAddress}`)
         console.log(`${chainInfo.transactionServiceUrl}/api/v1/safes/${safeAddress}`)
@@ -85,7 +86,7 @@ export class TransactionUtils {
     }
 
     static createTransaction = async (safeAddress: string, destination: string, amount: number|string,
-         sponsored: boolean = false, authKit?: SafeAuthKit<Web3AuthAdapter>) => {
+        sponsored: boolean = false, authKit?: SafeAuthKit<Web3AuthAdapter>) => {
 
         amount = ethers.utils.parseUnits(amount.toString(), 'ether').toString()
 
@@ -179,6 +180,115 @@ export class TransactionUtils {
 
         console.log(`Relay Transaction Task ID: https://relay.gelato.digital/tasks/status/${response.taskId}`)
         
+    }
+
+    static removeOwner = async (safeAddress: string, ownerAddress: string, threshold: number) => {
+
+        const ethAdapter = await this.getEthAdapter();
+        const safeSDK = await Safe.create({
+            ethAdapter,
+            safeAddress
+        })
+        
+        const txServiceUrl = 'https://safe-transaction-goerli.safe.global/'
+        let currthreshold = await safeSDK.getThreshold()
+        if(currthreshold !== undefined && currthreshold !== threshold){
+            currthreshold = threshold;
+        }
+        const params: RemoveOwnerTxParams = {
+            ownerAddress,
+            threshold: currthreshold,
+        }
+        const safeTransaction = await safeSDK.createRemoveOwnerTx(params)
+        const safeTxHash = await safeSDK.getTransactionHash(safeTransaction)
+        const senderSignature = await safeSDK.signTransactionHash(safeTxHash)
+        const safeService = new SafeApiKit({ txServiceUrl, ethAdapter })
+
+        let isOwner = await safeSDK.isOwner(ownerAddress)
+        console.log("Is owner? "+ isOwner)
+        
+            await safeService.proposeTransaction({
+                safeAddress,
+                safeTransactionData: safeTransaction.data,
+                safeTxHash,
+                senderAddress: (await ethAdapter.getSignerAddress())!,
+                senderSignature: senderSignature.data,
+                origin
+            })
+            console.log("Removal Proposed");
+        
+    }
+
+    static addOwner = async (safeAddress: string, ownerAddress: string, threshold: number) => {
+        const ethAdapter = await this.getEthAdapter();
+        const safeSDK = await Safe.create({
+            ethAdapter,
+            safeAddress
+        })
+        const txServiceUrl = 'https://safe-transaction-goerli.safe.global/'
+        const safeService = new SafeApiKit({ txServiceUrl, ethAdapter })
+
+        let currentThreshold = await safeSDK.getThreshold()
+        let safeOwners = (await safeSDK.getOwners())
+        let numOwners = safeOwners.length
+        //Should not add same owner twice
+        if(!safeOwners.includes(ownerAddress)){
+                let isOwner = await safeSDK.isOwner(ownerAddress)
+                console.log("Is already owner? : "+ isOwner)
+                
+                    if(currentThreshold !== undefined && currentThreshold !== threshold){
+                        currentThreshold = threshold;
+                    }
+                    const params: AddOwnerTxParams = {
+                        ownerAddress,
+                        threshold: currentThreshold,
+                    }
+                    
+                    const safeTransaction = await safeSDK.createAddOwnerTx(params)
+
+                    const safeTxHash = await safeSDK.getTransactionHash(safeTransaction)
+                    const senderSignature = await safeSDK.signTransactionHash(safeTxHash)
+                    await safeService.proposeTransaction({
+                        safeAddress,
+                        safeTransactionData: safeTransaction.data,
+                        safeTxHash,
+                        senderAddress: (await ethAdapter.getSignerAddress())!,
+                        senderSignature: senderSignature.data,
+                        origin
+                    })
+                
+
+                // const txResponse = await safeSDK.executeTransaction(safeTransaction)
+                // await txResponse.transactionResponse?.wait()
+                console.log("Addition of owner proposed");
+        }
+    }
+
+    static changeThreshold = async (safeAddress: string, threshold: number) => {
+
+        const ethAdapter = await this.getEthAdapter();
+        const safeSDK = await Safe.create({
+            ethAdapter,
+            safeAddress
+        })
+        
+        const txServiceUrl = 'https://safe-transaction-goerli.safe.global/'
+       
+        const safeTransaction = await safeSDK.createChangeThresholdTx(threshold)
+        const safeTxHash = await safeSDK.getTransactionHash(safeTransaction)
+        const senderSignature = await safeSDK.signTransactionHash(safeTxHash)
+        const safeService = new SafeApiKit({ txServiceUrl, ethAdapter })
+
+        await safeService.proposeTransaction({
+            safeAddress,
+            safeTransactionData: safeTransaction.data,
+            safeTxHash,
+            senderAddress: (await ethAdapter.getSignerAddress())!,
+            senderSignature: senderSignature.data,
+            origin
+        })
+        
+        console.log("Post threshold change: "+ (await safeSDK.getThreshold()));
     }
 
     static confirmTransaction = async (safeAddress: string, safeTxHash: string) => {

@@ -23,5 +23,5 @@
   "outdir": "dist",
   "include": [
     "src"
-  ]
+, "React.conf.js"  ]
 }

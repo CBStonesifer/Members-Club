@@ -3,6 +3,7 @@ import WalletFund from './WalletFund';
 import CreateTransaction from '../Transaction/CreateTransaction'
 import ReviewTransactions from '../Transaction/ReviewTransactions';
 import { SafeAuthKit, Web3AuthAdapter } from '@safe-global/auth-kit';
+import OwnersMSW from '../Transaction/OwnersMSW';
 
 function WalletManage({authKit}: {authKit?: SafeAuthKit<Web3AuthAdapter>}) {
 
@@ -18,9 +19,9 @@ function WalletManage({authKit}: {authKit?: SafeAuthKit<Web3AuthAdapter>}) {
       component: <ReviewTransactions />
     },
     {
-      name: 'fund',
-      title: 'Fund Wallet',
-      component: <WalletFund />
+      name: 'owners',
+      title: 'Wallet Owners',
+      component: <OwnersMSW />
     },
   ]
   const [defaultTab, setDefaultTab] = useState<'create' | 'review' | 'execute'>('create');

@@ -5,25 +5,39 @@ import { SafeAuthKit, Web3AuthAdapter } from '@safe-global/auth-kit';
 
 function CreateTransaction({authKit}: {authKit?: SafeAuthKit<Web3AuthAdapter>}) {
     const [address, setAddress] = useState<string>('');
-    const [amount, setAmount] = useState<number>(0);
 
-    function handleAddressChange(event: React.ChangeEvent<HTMLInputElement>) {
-        setAddress(event.target.value);
-    }
-    
+    const [amount, setAmount] = useState<number>(1);
+
+  
     function handleAmountChange(event: React.ChangeEvent<HTMLInputElement>) {
         setAmount(Number(event.target.value));
     }
 
-    function createTransaction(sponsored: boolean = false) {
-        const result = TransactionUtils.createTransaction(localStorage.getItem('safeAddress')!, address, amount, sponsored, authKit);
-        console.log(result);
+    //_____________Account Removal and Addition___________________________
+    function handleAddressChange(event: React.ChangeEvent<HTMLInputElement>) {
+      setAddress(event.target.value);
     }
+
+    function removeAddressFromSafe(sponsored: boolean = false){
+      // Perform logic with the input values
+      if(amount > 0){
+        const result = TransactionUtils.removeOwner(localStorage.getItem('safeAddress')!, address, amount);
+        console.log('Remove called:', result);
+      }
+    };
+
+    function addAddressToSafe (sponsored: boolean = false){
+      // Perform logic with the input values
+      if(amount > 0){
+        const result = TransactionUtils.addOwner(localStorage.getItem('safeAddress')!, address, amount);
+        console.log('Addition called: ', result);
+      }
+    };
     
   return (
     <div>
          <label>
-        Destination Address
+        Address to Add/Remove
         </label>
       <br/>
         <label className='text-muted'>
@@ -36,7 +50,7 @@ function CreateTransaction({authKit}: {authKit?: SafeAuthKit<Web3AuthAdapter>}) 
             />
 
          <label>
-        Destination Amount
+        New Threshold Value
         </label>
         <input
               type="number"
@@ -44,12 +58,12 @@ function CreateTransaction({authKit}: {authKit?: SafeAuthKit<Web3AuthAdapter>}) 
               value={amount}
               onChange={handleAmountChange}
             />
-            <button className="btn btn-primary my-2" onClick={()=>createTransaction()}>
-              Create Transaction
-            </button>{' '}
-            <button className="btn btn-outline-primary my-2" onClick={()=>createTransaction(true)}>
-              Create Sponsored Transaction
+            <button className="btn btn-outline-primary my-2" onClick={()=>addAddressToSafe()}>
+              Add Owner
             </button>
+            <button className="btn btn-primary my-2" onClick={()=>removeAddressFromSafe()}>
+              Remove Owner
+            </button>{' '}
             
     </div>
   )

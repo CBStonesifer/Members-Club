@@ -7,7 +7,7 @@ import { CHAIN_INFO, DEFAULT_CHAIN_ID } from '../../utils/Chain';
 function ReviewTransactions() {
 
   // initialize list of pending transactions
-    const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
+  const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
   // initialize transaction service url with useState
   const [txServiceUrl, setTransactionServiceUrl] = useState<string>(CHAIN_INFO[DEFAULT_CHAIN_ID].transactionServiceUrl);
 
@@ -19,7 +19,6 @@ function ReviewTransactions() {
 
         async function getPendingTransactions() {
             const ethAdapter = await TransactionUtils.getEthAdapter(false)
-
 
             const chainId = await ethAdapter.getChainId();
             const chainInfo = CHAIN_INFO[chainId.toString()];
@@ -56,14 +55,13 @@ function ReviewTransactions() {
             <tr>
                 <th>Hash</th>
                 <th>Destination</th>
-                <th>Amount</th>
                 <th>Time</th>
                 <th>Action</th>
             </tr>
             </thead>
             <tbody>
-            {pendingTransactions.map((transaction) => (
-                <tr key={transaction.hash}>
+            {pendingTransactions.map((transaction, index) => (
+                <tr key={index}>
                     <td>
                         <a href={`${txServiceUrl}/api/v1/multisig-transactions/${transaction.safeTxHash}`} 
                             target="_blank" rel="noreferrer">
@@ -71,7 +69,6 @@ function ReviewTransactions() {
                         </a>
                     </td>
                     <td>{transaction.to}</td>
-                    <td>{ethers.utils.formatUnits(transaction.value)}</td>
                     <td>{new Date(transaction.submissionDate).toLocaleDateString()}{' '}{new Date(transaction.submissionDate).toLocaleTimeString()}</td>
                     <td>
                         <button className="btn btn-primary btn-success my-2" 
