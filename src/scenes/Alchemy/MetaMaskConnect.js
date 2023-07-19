@@ -6,6 +6,7 @@ const MetaMaskConnect = () => {
     const [transactions, setTransactions] = useState([]);
     const [account, setAccount] = useState('');
     const [amount, setAmount] = useState(0);
+    const [connected, setConnected] = useState(false)
     const [data, setdata] = useState({
         address: "",
         Balance: null,
@@ -33,6 +34,7 @@ const MetaMaskConnect = () => {
         alert("install metamask extension!!");
         }
         console.log("Connect")
+        setConnected(true)
     };
 
     // getbalance function for getting a balance in
@@ -113,6 +115,7 @@ const MetaMaskConnect = () => {
     const transferComponent = () => {
         return (
             <div>
+                    Account Balance: {connected ? (data.Balance): 0} Goerli ETH
                     <div>
                     Enter an address to transfer funds to
                     </div>
